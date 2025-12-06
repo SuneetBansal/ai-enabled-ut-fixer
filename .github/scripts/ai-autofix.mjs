@@ -131,11 +131,13 @@ ${failingLog}
 
 async function proposePatchWithAzure(prompt) {
   if (!OpenAI) return null;
-  const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-  const apiKey = process.env.AZURE_OPENAI_API_KEY;
-  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+  const endpoint = "https://openai-test-cinema.openai.azure.com/";
+  const apiKey = "DDpB2gjNSrFjRRF1E1nvybxWc9jBnAZ77BY0ueaKHMbUuhzNVivxJQQJ99BLACYeBjFXJ3w3AAABACOGe0Pd";
+  const deployment = "gpt-5-chat";
   const apiVersion = "2025-10-03";
   if (!(endpoint && apiKey && deployment)) return null;
+
+    console.log('------------------------------------------------------');
 
   // openai@4 supports Azure via baseURL + api-version
   const client = new OpenAI({
@@ -144,6 +146,8 @@ async function proposePatchWithAzure(prompt) {
     defaultQuery: { "api-version": apiVersion },
     defaultHeaders: { "api-key": apiKey },
   });
+
+  console.log('++++++++++++++++++++++++++++++++++++++++++++');
 
   const resp = await client.chat.completions.create({
     model: deployment,
@@ -154,6 +158,7 @@ async function proposePatchWithAzure(prompt) {
       { role: "user", content: prompt },
     ],
   });
+  console.log('----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
   const content = resp?.choices?.[0]?.message?.content || "";
   if (content.includes("diff --git")) return content;
   return null;
