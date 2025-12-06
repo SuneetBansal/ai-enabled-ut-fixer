@@ -135,7 +135,7 @@ ${failingLog}
 
 async function proposePatchWithAzure(prompt) {
   if (!OpenAI) return null;
-  const endpoint = "https://sunee-miu300cs-eastus2.openai.azure.com";
+  const endpoint = "https://openai-test-cinema.openai.azure.com";
   const apiKey = "DDpB2gjNSrFjRRF1E1nvybxWc9jBnAZ77BY0ueaKHMbUuhzNVivxJQQJ99BLACYeBjFXJ3w3AAABACOGe0Pd";
   const deployment = "gpt-5-chat";
   const apiVersion = "2025-01-01-preview";
