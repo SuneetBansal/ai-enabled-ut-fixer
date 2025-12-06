@@ -1,0 +1,104 @@
+name: Angular PR Unit Test + Auto-Fix
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      exit_code: ${{ steps.test.outputs.exit_code }}
+      runner: ${{ steps.detect.outputs.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm i
+
+      - name: Run unit tests
+        id: test
+        shell: bash
+        run: |
+          set +e
+          npm run test | tee test_output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+          exit 0
+
+      - name: Upload test output
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output
+          path: test_output.txt
+
+  auto-fix:
+    needs: run-tests
+    if: needs.run-tests.outputs.exit_code != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      - name: Install deps (+ agent deps)
+        run: |
+          npm ci
+          # Only needed for AI-powered fixes
+          npm i -D openai@^4
+
+      - name: Download test output
+        uses: actions/download-artifact@v4
+        with:
+          name: test-output
+          path: .
+
+      - name: Run auto-fix agent (Angular)
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          REPO_NAME: ${{ github.repository }}
+          TEST_RUNNER: ${{ needs.run-tests.outputs.runner }}
+          AZURE_OPENAI_ENDPOINT: "https://openai-test-cinema.openai.azure.com/"
+          AZURE_OPENAI_API_KEY: "DDpB2gjNSrFjRRF1E1nvybxWc9jBnAZ77BY0ueaKHMbUuhzNVivxJQQJ99BLACYeBjFXJ3w3AAABACOGe0Pd"
+          AZURE_OPENAI_DEPLOYMENT: "gpt-5-chat" # e.g., gpt-4o
+          AZURE_OPENAI_API_VERSION: "2025-10-03"
+        run: |
+          node .github/scripts/ai-autofix.mjs --test-output ./test_output.txt --max-iterations 2 --runner ${TEST_RUNNER}
+
+      - name: Create PR with fixes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ github.token }}
+          commit-message: "Auto-fix: Address failing Angular unit tests for PR #${{ github.event.number }}"
+          title: "Auto-fix: Angular unit test failures for PR #${{ github.event.number }}"
+          body: |
+            This automated PR attempts to fix failing unit tests detected in PR #${{ github.event.number }}.
+            - Base: **${{ github.event.pull_request.base.ref }}**
+            - Source: **autofix/pr-${{ github.event.number }}**
+            - Runner: **${{ needs.run-tests.outputs.runner }}**
+            - Agent: Azure OpenAI (optional)
+            Review diffs and logs; merge this fix first, then re-run the original PR.
+          branch: "autofix/pr-${{ github.event.number }}"
+          base: "${{ github.event.pull_request.base.ref }}"
+          labels: "autofix,bot"
