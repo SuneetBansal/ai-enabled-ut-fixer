@@ -1,9 +1,8 @@
 name: Angular PR Unit Test + Auto-Fix
+
 on:
-  push:
-    branches:
-      - main
-      - develop
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
