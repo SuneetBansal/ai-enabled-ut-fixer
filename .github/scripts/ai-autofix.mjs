@@ -47,6 +47,7 @@ function readOrEmpty(p) {
 
 function runTests() {
   const r = run("npm run test");
+  console.log('Test Result ---  ', JSON.stringify(r));
   return { log: r.stdout + "\n" + r.stderr, code: r.code };
 }
 
@@ -149,7 +150,7 @@ async function main() {
     angularJson: readOrEmpty("angular.json"),
   };
 
-//   let failingLog = readOrEmpty(testOutputPath).trim();
+   let failingLog = readOrEmpty(testOutputPath).trim();
 
 //   // If no log provided, run tests to capture
 //   if (!failingLog) {
@@ -172,10 +173,10 @@ async function main() {
   let { log, code } = runTests();
   console.log('+++++++++  CODE ********************  ', code);
  // writeFileSync("post_deterministic_test_output.txt", log, "utf-8");
-  if (code === 0) {
-    console.log("Tests pass after deterministic fixes ✅");
-    return 0;
-  }
+//   if (code === 0) {
+//     console.log("Tests pass after deterministic fixes ✅");
+//     return 0;
+//   }
 
   // AI iterations
   for (let i = 0; i < maxIterations; i++) {
