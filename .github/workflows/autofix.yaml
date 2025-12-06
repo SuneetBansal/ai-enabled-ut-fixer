@@ -15,6 +15,10 @@ jobs:
       exit_code: ${{ steps.test.outputs.exit_code }}
       runner: ${{ steps.detect.outputs.runner }}
     steps:
+      - name: Create PR with fixes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
