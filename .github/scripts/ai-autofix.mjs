@@ -163,7 +163,7 @@ async function main() {
   }
 
   // First pass: deterministic fixes
-  deterministicFixes();
+ // deterministicFixes();
   if (hasChanges()) {
     run('git add -A && git commit -m "chore: lint/format before AI autofix" || true');
   }
