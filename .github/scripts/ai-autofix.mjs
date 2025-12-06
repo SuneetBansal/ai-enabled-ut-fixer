@@ -29,8 +29,12 @@ function run(cmd, opts = {}) {
 }
 
 function listRepoFiles(limit = 400) {
-  const out = run("git ls-files", { }).stdout.trim().split("\n");
-  return out.slice(0, limit).join("\n");
+//     console.log('************START*********************');
+//   const out = run("git ls-files", { }).stdout.trim().split("\n");
+//   console.log('************START2*********************', JSON.stringify(out));
+//   const t = out.slice(0, limit).join("\n");
+//   console.log('************START3*********************', JSON.stringify(t));
+  return {};
 }
 
 function readOrEmpty(p) {
@@ -131,31 +135,36 @@ ${failingLog}
 
 async function proposePatchWithAzure(prompt) {
   if (!OpenAI) return null;
-  const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-  const apiKey = process.env.AZURE_OPENAI_API_KEY;
-  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+  const endpoint = "https://openai-test-cinema.openai.azure.com/";
+  const apiKey = "DDpB2gjNSrFjRRF1E1nvybxWc9jBnAZ77BY0ueaKHMbUuhzNVivxJQQJ99BLACYeBjFXJ3w3AAABACOGe0Pd";
+  const deployment = "gpt-5-chat";
   const apiVersion = "2025-10-03";
   if (!(endpoint && apiKey && deployment)) return null;
 
-  // openai@4 supports Azure via baseURL + api-version
-  const client = new OpenAI({
-    apiKey,
-    baseURL: `${endpoint}/openai/deployments/${deployment}`,
-    defaultQuery: { "api-version": apiVersion },
-    defaultHeaders: { "api-key": apiKey },
-  });
+    console.log('------------------------------------------------------');
 
-  const resp = await client.chat.completions.create({
-    model: deployment,
-    temperature: 0.2,
-    max_tokens: 2000,
-    messages: [
-      { role: "system", content: "You generate minimal unified diffs that fix Angular tests." },
-      { role: "user", content: prompt },
-    ],
-  });
-  const content = resp?.choices?.[0]?.message?.content || "";
-  if (content.includes("diff --git")) return content;
+  // openai@4 supports Azure via baseURL + api-version
+//   const client = new OpenAI({
+//     apiKey,
+//     baseURL: `${endpoint}/openai/deployments/${deployment}`,
+//     defaultQuery: { "api-version": apiVersion },
+//     defaultHeaders: { "api-key": apiKey },
+//   });
+
+//   console.log('++++++++++++++++++++++++++++++++++++++++++++');
+
+//   const resp = await client.chat.completions.create({
+//     model: deployment,
+//     temperature: 0.2,
+//     max_tokens: 2000,
+//     messages: [
+//       { role: "system", content: "You generate minimal unified diffs that fix Angular tests." },
+//       { role: "user", content: prompt },
+//     ],
+//   });
+//   console.log('----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+//   const content = resp?.choices?.[0]?.message?.content || "";
+//   if (content.includes("diff --git")) return content;
   return null;
 }
 
@@ -202,40 +211,41 @@ async function main() {
   // AI iterations
   for (let i = 0; i < maxIterations; i++) {
     console.log(`--- AI auto-fix iteration ${i + 1}/${maxIterations} ---`);
-    const repoFiles = listRepoFiles(400);
-    const prompt = buildPrompt(repoFiles, log || failingLog, info, runner);
-    const diff = await proposePatchWithAzure(prompt);
+//     const repoFiles = listRepoFiles(400);
+//     console.log('------ ENTER --------------');
+//     const prompt = buildPrompt(repoFiles, log || failingLog, info, runner);
+//     const diff = await proposePatchWithAzure(prompt);
 
-    if (!diff) {
-      console.log("No AI patch produced; stopping.");
-      break;
-    }
+//     if (!diff) {
+//       console.log("No AI patch produced; stopping.");
+//       break;
+//     }
 
-    console.log(diff.slice(0, 1000) + "\n...\n");
+//     console.log(diff.slice(0, 1000) + "\n...\n");
 
-    const ok = applyPatch(diff);
-    if (!ok) {
-      console.log("Patch failed to apply; stopping.");
-      break;
-    }
+//     const ok = applyPatch(diff);
+//     if (!ok) {
+//       console.log("Patch failed to apply; stopping.");
+//       break;
+//     }
 
-    // Re-test
-    const r2 = runTests(runner);
-    writeFileSync("post_fix_test_output.txt", r2.log, "utf-8");
-    if (r2.code === 0) {
-      console.log("Tests pass after AI auto-fix ✅");
-      return 0;
-    }
-    log = r2.log;
-  }
+//     // Re-test
+//     const r2 = runTests(runner);
+//     writeFileSync("post_fix_test_output.txt", r2.log, "utf-8");
+//     if (r2.code === 0) {
+//       console.log("Tests pass after AI auto-fix ✅");
+//       return 0;
+//     }
+//     log = r2.log;
+//   }
 
-  // Leave changes (if any) for PR creation step
-  if (hasChanges()) {
-    console.log("Changes proposed though tests still failing. Raising PR for review.");
-    return 0;
-  }
+//   // Leave changes (if any) for PR creation step
+//   if (hasChanges()) {
+//     console.log("Changes proposed though tests still failing. Raising PR for review.");
+//     return 0;
+//   }
 
-  console.log("No changes to propose.");
+//   console.log("No changes to propose.");
   return 0;
 }
 
