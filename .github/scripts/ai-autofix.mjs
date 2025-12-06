@@ -149,18 +149,18 @@ async function main() {
     angularJson: readOrEmpty("angular.json"),
   };
 
-  let failingLog = readOrEmpty(testOutputPath).trim();
+//   let failingLog = readOrEmpty(testOutputPath).trim();
 
-  // If no log provided, run tests to capture
-  if (!failingLog) {
-    const r = runTests();
-    failingLog = r.log;
-    if (r.code === 0) {
-      console.log("Tests already pass; no fix required.");
-      return 0;
-    }
-    writeFileSync("test_output.txt", failingLog, "utf-8");
-  }
+//   // If no log provided, run tests to capture
+//   if (!failingLog) {
+//     const r = runTests();
+//     failingLog = r.log;
+//     if (r.code === 0) {
+//       console.log("Tests already pass; no fix required.");
+//       return 0;
+//     }
+//     writeFileSync("test_output.txt", failingLog, "utf-8");
+//   }
 
   // First pass: deterministic fixes
  // deterministicFixes();
@@ -170,7 +170,8 @@ async function main() {
 
   // Test after deterministic fixes
   let { log, code } = runTests();
-  writeFileSync("post_deterministic_test_output.txt", log, "utf-8");
+  console.log('+++++++++  CODE ********************  ', code);
+ // writeFileSync("post_deterministic_test_output.txt", log, "utf-8");
   if (code === 0) {
     console.log("Tests pass after deterministic fixes ✅");
     return 0;
