@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
+
 // Optional AI (Azure OpenAI via openai SDK)
 let OpenAI = null;
 try {
@@ -146,7 +147,7 @@ async function proposePatchWithAzure(prompt) {
   // openai@4 supports Azure via baseURL + api-version
   const client = new OpenAI({
     apiKey,
-    baseURL: `${endpoint}/openai/deployments/${deployment}`,
+    baseURL: `${endpoint}`,
     defaultQuery: { "api-version": apiVersion },
     defaultHeaders: { "api-key": apiKey },
   });
