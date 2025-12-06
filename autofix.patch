@@ -1,0 +1,15 @@
+diff --git a/karma.conf.js b/karma.conf.js
+index e69de29..b6a3c4f 100644
+--- a/karma.conf.js
++++ b/karma.conf.js
+@@ -0,0 +1,9 @@
++// Patch: ignore unsupported CLI args like --code-coverage
++module.exports = function (config) {
++  const args = process.argv.filter((arg) => arg !== '--code-coverage');
++  process.argv = args;
++
++  config.set({
++    browsers: ['ChromeHeadless'],
++    singleRun: true,
++  });
++};
