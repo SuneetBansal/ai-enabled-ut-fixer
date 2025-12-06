@@ -136,8 +136,8 @@ ${failingLog}
 
 async function proposePatchWithAzure(prompt) {
   if (!OpenAI) return null;
-  const endpoint = "https://sunee-miu300cs-eastus2.cognitiveservices.azure.com";
-  const apiKey = "DDpB2gjNSrFjRRF1E1nvybxWc9jBnAZ77BY0ueaKHMbUuhzNVivxJQQJ99BLACYeBjFXJ3w3AAABACOGe0Pd";
+  const endpoint = "https://openai-test-cinema.openai.azure.com";
+  const apiKey = "1d20e8zxvajgiuGSCyQ2XTU9ZfT7tvMKjRMLrS03JHbhuTpSsE8OJQQJ99BLACHYHv6XJ3w3AAAAACOGLhE2";
   const deployment = "gpt-5-chat";
   const apiVersion = "2025-01-01-preview";
   if (!(endpoint && apiKey && deployment)) return null;
@@ -147,7 +147,7 @@ async function proposePatchWithAzure(prompt) {
   // openai@4 supports Azure via baseURL + api-version
   const client = new OpenAI({
     apiKey,
-    baseURL: `${endpoint}`,
+    baseURL: `${endpoint}/openai/deployments/${deployment}`,
     defaultQuery: { "api-version": apiVersion },
     defaultHeaders: { "api-key": apiKey },
   });
