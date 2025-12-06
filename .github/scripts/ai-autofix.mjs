@@ -1,24 +1,27 @@
 #!/usr/bin/env node
 /**
  * Angular auto-fix agent:
- * - Reads failing test output (Jest or Karma).
+ * - Reads failing test output (npm run test).
  * - Attempts deterministic fixes (lint --fix, prettier).
  * - (Optional) Asks Azure OpenAI to propose a minimal unified diff.
  * - Applies patch, re-runs tests, iterates up to N times.
  * - Leaves changes staged for create-pull-request step.
  */
 
-import { execSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-
 // Optional AI (Azure OpenAI via openai SDK)
+// Configure via environment variables:
+// AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_DEPLOYMENT, AZURE_OPENAI_API_VERSION
 let OpenAI = null;
 try {
   ({ default: OpenAI } = await import("openai"));
-} catch (_) {}
+} catch (_) {
+  // OpenAI SDK not available; AI proposals will be skipped
+}
 
 function run(cmd, opts = {}) {
   console.log(`\n::group::RUN ${cmd}`);
@@ -30,48 +33,27 @@ function run(cmd, opts = {}) {
 }
 
 function listRepoFiles(limit = 400) {
-    console.log('************START*********************');
-  const out = run("git ls-files", { }).stdout.trim().split("\n");
-  console.log('************START2*********************', JSON.stringify(out));
-  const t = out.slice(0, limit).join("\n");
-  console.log('************START3*********************', JSON.stringify(t));
-  return {};
+  const out = run("git ls-files", {}).stdout.trim().split("\n");
+  return out.slice(0, limit).join("\n");
 }
 
 function readOrEmpty(p) {
-  try { return readFileSync(p, "utf-8"); } catch { return ""; }
-}
-
-function detectAngularInfo() {
-  const pkg = readOrEmpty("package.json");
-  const angularJson = readOrEmpty("angular.json");
-  const karmaConf = readOrEmpty("karma.conf.js") || readOrEmpty("karma.conf.ts");
-  const jestConfig =
-    readOrEmpty("jest.config.js") || readOrEmpty("jest.config.ts") || readOrEmpty("jest.preset.js");
-  const isJest =
-    jestConfig.includes("jest") || pkg.includes('"jest"') || pkg.includes("jest-preset-angular");
-  return { pkg, angularJson, karmaConf, jestConfig, runner: isJest ? "jest" : "karma" };
-}
-
-function runTests(runner = "karma") {
-  if (runner === "jest") {
-    const r = run("npm test --silent -- --ci");
-    return { log: r.stdout + "\n" + r.stderr, code: r.code };
-  } else {
-    // Prefer an existing CI script if present
-    const hasCi = run("npm run | grep -q \"test:ci\"; echo $?", { }).stdout.trim() === "0";
-    const cmd = hasCi
-      ? "npm run test:ci"
-      : "npx ng test --watch=false --browsers=ChromeHeadless --code-coverage=false";
-    const r = run(cmd);
-    return { log: r.stdout + "\n" + r.stderr, code: r.code };
+  try {
+    return readFileSync(p, "utf-8");
+  } catch {
+    return "";
   }
+}
+
+function runTests() {
+  const r = run("npm run test");
+  return { log: r.stdout + "\n" + r.stderr, code: r.code };
 }
 
 function applyPatch(diffText) {
   const patchPath = path.join(process.cwd(), "autofix.patch");
   writeFileSync(patchPath, diffText, "utf-8");
-  const r = run(`git apply --index ${patchPath}`, { });
+  const r = run(`git apply --index ${patchPath}`, {});
   return r.code === 0;
 }
 
@@ -79,7 +61,7 @@ function hasChanges() {
   return run("git status --porcelain", {}).stdout.trim().length > 0;
 }
 
-function deterministicFixes(runner = "karma") {
+function deterministicFixes() {
   // 1) ESLint auto-fix
   if (existsSync("node_modules/.bin/eslint")) {
     run("npx eslint . --ext .ts,.js --fix || true");
@@ -88,20 +70,14 @@ function deterministicFixes(runner = "karma") {
   if (existsSync("node_modules/.bin/prettier")) {
     run('npx prettier "**/*.{ts,js,html,scss,css,md,json}" --write || true');
   }
-  // 3) For Jest snapshot projects (optional, conservative)
-  if (runner === "jest") {
-    // Only update snapshots if the failure explicitly mentions snapshots
-    // You can relax this if your workflow prefers auto-update.
-    // run("npm test -- -u || true");
-  }
 }
 
-function buildPrompt(repoFiles, failingLog, info, runner) {
+function buildPrompt(repoFiles, failingLog, info) {
   return `
 You are an automated Angular code-fix agent.
 
 Goal:
-- Read the failing ${runner.toUpperCase()} unit test output.
+- Read the failing unit test output (npm run test).
 - Propose a minimal patch (unified diff) to make tests pass.
 - Do not weaken tests unnecessarily; prefer fixing source where appropriate.
 - Keep Angular, RxJS, and test idioms intact (e.g., TestBed, HttpTestingController, fakeAsync/tick).
@@ -111,7 +87,6 @@ Constraints:
 - Output ONLY a unified diff starting with 'diff --git'.
 - The patch must apply cleanly with \`git apply --index\`.
 - Avoid adding new dependencies without strong reason.
-- For Jest, do not silently update snapshots; only adjust code unless messages show clear snapshot drift rationale.
 
 Context:
 - package.json (excerpt):
@@ -119,12 +94,6 @@ ${info.pkg.slice(0, 2500)}
 
 - angular.json (excerpt):
 ${info.angularJson.slice(0, 2500)}
-
-- karma.conf (excerpt):
-${info.karmaConf.slice(0, 1500)}
-
-- jest config (excerpt):
-${info.jestConfig.slice(0, 1500)}
 
 - Repo files (truncated):
 ${repoFiles}
@@ -136,23 +105,20 @@ ${failingLog}
 
 async function proposePatchWithAzure(prompt) {
   if (!OpenAI) return null;
+
   const endpoint = "https://sunee-miu300cs-eastus2.cognitiveservices.azure.com";
   const apiKey = "1d20e8zxvajgiuGSCyQ2XTU9ZfT7tvMKjRMLrS03JHbhuTpSsE8OJQQJ99BLACHYHv6XJ3w3AAAAACOGLhE2";
   const deployment = "gpt-5-chat";
   const apiVersion = "2025-01-01-preview";
+
   if (!(endpoint && apiKey && deployment)) return null;
 
-    console.log('------------------------------------------------------');
-
-  // openai@4 supports Azure via baseURL + api-version
   const client = new OpenAI({
     apiKey,
     baseURL: `${endpoint}/openai/deployments/${deployment}`,
     defaultQuery: { "api-version": apiVersion },
     defaultHeaders: { "api-key": apiKey },
   });
-
-  console.log('++++++++++++++++++++++++++++++++++++++++++++');
 
   const resp = await client.chat.completions.create({
     model: deployment,
@@ -163,7 +129,7 @@ async function proposePatchWithAzure(prompt) {
       { role: "user", content: prompt },
     ],
   });
-  console.log('----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+
   const content = resp?.choices?.[0]?.message?.content || "";
   if (content.includes("diff --git")) return content;
   return null;
@@ -177,16 +143,17 @@ async function main() {
   const maxIterations = args.includes("--max-iterations")
     ? parseInt(args[args.indexOf("--max-iterations") + 1], 10)
     : 1;
-  const runnerArg = args.includes("--runner") ? args[args.indexOf("--runner") + 1] : null;
 
-  const info = detectAngularInfo();
-  const runner = runnerArg || info.runner;
+  const info = {
+    pkg: readOrEmpty("package.json"),
+    angularJson: readOrEmpty("angular.json"),
+  };
 
   let failingLog = readOrEmpty(testOutputPath).trim();
 
   // If no log provided, run tests to capture
   if (!failingLog) {
-    const r = runTests(runner);
+    const r = runTests();
     failingLog = r.log;
     if (r.code === 0) {
       console.log("Tests already pass; no fix required.");
@@ -196,13 +163,13 @@ async function main() {
   }
 
   // First pass: deterministic fixes
-  deterministicFixes(runner);
+  deterministicFixes();
   if (hasChanges()) {
-    run("git add -A && git commit -m \"chore: lint/format before AI autofix\" || true");
+    run('git add -A && git commit -m "chore: lint/format before AI autofix" || true');
   }
 
   // Test after deterministic fixes
-  let { log, code } = runTests(runner);
+  let { log, code } = runTests();
   writeFileSync("post_deterministic_test_output.txt", log, "utf-8");
   if (code === 0) {
     console.log("Tests pass after deterministic fixes ✅");
@@ -213,8 +180,7 @@ async function main() {
   for (let i = 0; i < maxIterations; i++) {
     console.log(`--- AI auto-fix iteration ${i + 1}/${maxIterations} ---`);
     const repoFiles = listRepoFiles(400);
-    console.log('------ ENTER --------------');
-    const prompt = buildPrompt(repoFiles, log || failingLog, info, runner);
+    const prompt = buildPrompt(repoFiles, log || failingLog, info);
     const diff = await proposePatchWithAzure(prompt);
 
     if (!diff) {
@@ -231,7 +197,7 @@ async function main() {
     }
 
     // Re-test
-    const r2 = runTests(runner);
+    const r2 = runTests();
     writeFileSync("post_fix_test_output.txt", r2.log, "utf-8");
     if (r2.code === 0) {
       console.log("Tests pass after AI auto-fix ✅");
