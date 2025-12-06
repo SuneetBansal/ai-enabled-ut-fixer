@@ -29,8 +29,12 @@ function run(cmd, opts = {}) {
 }
 
 function listRepoFiles(limit = 400) {
+    console.log('************START*********************');
   const out = run("git ls-files", { }).stdout.trim().split("\n");
-  return out.slice(0, limit).join("\n");
+  console.log('************START2*********************', JSON.stringify(out));
+  const t = out.slice(0, limit).join("\n");
+  console.log('************START3*********************', JSON.stringify(t));
+  return t;
 }
 
 function readOrEmpty(p) {
