@@ -211,41 +211,41 @@ async function main() {
   // AI iterations
   for (let i = 0; i < maxIterations; i++) {
     console.log(`--- AI auto-fix iteration ${i + 1}/${maxIterations} ---`);
-    const repoFiles = listRepoFiles(400);
-    console.log('------ ENTER --------------');
-    const prompt = buildPrompt(repoFiles, log || failingLog, info, runner);
-    const diff = await proposePatchWithAzure(prompt);
+//     const repoFiles = listRepoFiles(400);
+//     console.log('------ ENTER --------------');
+//     const prompt = buildPrompt(repoFiles, log || failingLog, info, runner);
+//     const diff = await proposePatchWithAzure(prompt);
 
-    if (!diff) {
-      console.log("No AI patch produced; stopping.");
-      break;
-    }
+//     if (!diff) {
+//       console.log("No AI patch produced; stopping.");
+//       break;
+//     }
 
-    console.log(diff.slice(0, 1000) + "\n...\n");
+//     console.log(diff.slice(0, 1000) + "\n...\n");
 
-    const ok = applyPatch(diff);
-    if (!ok) {
-      console.log("Patch failed to apply; stopping.");
-      break;
-    }
+//     const ok = applyPatch(diff);
+//     if (!ok) {
+//       console.log("Patch failed to apply; stopping.");
+//       break;
+//     }
 
-    // Re-test
-    const r2 = runTests(runner);
-    writeFileSync("post_fix_test_output.txt", r2.log, "utf-8");
-    if (r2.code === 0) {
-      console.log("Tests pass after AI auto-fix ✅");
-      return 0;
-    }
-    log = r2.log;
-  }
+//     // Re-test
+//     const r2 = runTests(runner);
+//     writeFileSync("post_fix_test_output.txt", r2.log, "utf-8");
+//     if (r2.code === 0) {
+//       console.log("Tests pass after AI auto-fix ✅");
+//       return 0;
+//     }
+//     log = r2.log;
+//   }
 
-  // Leave changes (if any) for PR creation step
-  if (hasChanges()) {
-    console.log("Changes proposed though tests still failing. Raising PR for review.");
-    return 0;
-  }
+//   // Leave changes (if any) for PR creation step
+//   if (hasChanges()) {
+//     console.log("Changes proposed though tests still failing. Raising PR for review.");
+//     return 0;
+//   }
 
-  console.log("No changes to propose.");
+//   console.log("No changes to propose.");
   return 0;
 }
 
