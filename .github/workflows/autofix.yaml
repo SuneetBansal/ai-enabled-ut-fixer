@@ -15,10 +15,6 @@ jobs:
       exit_code: ${{ steps.test.outputs.exit_code }}
       runner: ${{ steps.detect.outputs.runner }}
     steps:
-      - name: Create PR with fixes
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -91,9 +87,9 @@ jobs:
           node .github/scripts/ai-autofix.mjs --test-output ./test_output.txt --max-iterations 2 --runner ${TEST_RUNNER}
 
       - name: Create PR with fixes
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ github.token }}
+          token: ${{ secrets.PAT_TOKEN }}
           commit-message: "Auto-fix: Address failing Angular unit tests for PR #${{ github.event.number }}"
           title: "Auto-fix: Angular unit test failures for PR #${{ github.event.number }}"
           body: |
