@@ -1,0 +1,42 @@
+diff --git a/src/app/app.ts b/src/app/app.ts
+index e69de29..b9b5b2a 100644
+--- a/src/app/app.ts
++++ b/src/app/app.ts
+@@ -0,0 +1,9 @@
++import { Component } from '@angular/core';
++
++@Component({
++  selector: 'app-root',
++  standalone: true,
++  templateUrl: './app.html',
++  styleUrls: ['./app.scss'],
++})
++export class AppComponent {}
+diff --git a/src/app/app.spec.ts b/src/app/app.spec.ts
+index e69de29..b3c5d2a 100644
+--- a/src/app/app.spec.ts
++++ b/src/app/app.spec.ts
+@@ -0,0 +1,17 @@
++import { TestBed } from '@angular/core/testing';
++import { AppComponent } from './app';
++
++describe('AppComponent', () => {
++  beforeEach(async () => {
++    await TestBed.configureTestingModule({
++      imports: [AppComponent],
++    }).compileComponents();
++  });
++
++  it('should create the app', () => {
++    const fixture = TestBed.createComponent(AppComponent);
++    const app = fixture.componentInstance;
++    expect(app).toBeTruthy();
++  });
++
++  it('should render', () => {
++    const fixture = TestBed.createComponent(AppComponent);
++    fixture.detectChanges();
++    const compiled = fixture.nativeElement as HTMLElement;
++    expect(compiled).toBeTruthy();
++  });
++});
