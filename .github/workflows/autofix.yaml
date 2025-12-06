@@ -87,7 +87,7 @@ jobs:
           node .github/scripts/ai-autofix.mjs --test-output ./test_output.txt --max-iterations 2 --runner ${TEST_RUNNER}
 
       - name: Create PR with fixes
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.PAT_TOKEN }}
           commit-message: "Auto-fix: Address failing Angular unit tests for PR #${{ github.event.number }}"
