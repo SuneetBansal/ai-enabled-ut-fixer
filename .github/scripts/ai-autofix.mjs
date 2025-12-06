@@ -140,27 +140,27 @@ async function proposePatchWithAzure(prompt) {
     console.log('------------------------------------------------------');
 
   // openai@4 supports Azure via baseURL + api-version
-  const client = new OpenAI({
-    apiKey,
-    baseURL: `${endpoint}/openai/deployments/${deployment}`,
-    defaultQuery: { "api-version": apiVersion },
-    defaultHeaders: { "api-key": apiKey },
-  });
+//   const client = new OpenAI({
+//     apiKey,
+//     baseURL: `${endpoint}/openai/deployments/${deployment}`,
+//     defaultQuery: { "api-version": apiVersion },
+//     defaultHeaders: { "api-key": apiKey },
+//   });
 
-  console.log('++++++++++++++++++++++++++++++++++++++++++++');
+//   console.log('++++++++++++++++++++++++++++++++++++++++++++');
 
-  const resp = await client.chat.completions.create({
-    model: deployment,
-    temperature: 0.2,
-    max_tokens: 2000,
-    messages: [
-      { role: "system", content: "You generate minimal unified diffs that fix Angular tests." },
-      { role: "user", content: prompt },
-    ],
-  });
-  console.log('----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-  const content = resp?.choices?.[0]?.message?.content || "";
-  if (content.includes("diff --git")) return content;
+//   const resp = await client.chat.completions.create({
+//     model: deployment,
+//     temperature: 0.2,
+//     max_tokens: 2000,
+//     messages: [
+//       { role: "system", content: "You generate minimal unified diffs that fix Angular tests." },
+//       { role: "user", content: prompt },
+//     ],
+//   });
+//   console.log('----------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+//   const content = resp?.choices?.[0]?.message?.content || "";
+//   if (content.includes("diff --git")) return content;
   return null;
 }
 
