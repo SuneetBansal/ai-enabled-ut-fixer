@@ -208,6 +208,7 @@ async function main() {
   for (let i = 0; i < maxIterations; i++) {
     console.log(`--- AI auto-fix iteration ${i + 1}/${maxIterations} ---`);
     const repoFiles = listRepoFiles(400);
+    console.log('------ ENTER --------------');
     const prompt = buildPrompt(repoFiles, log || failingLog, info, runner);
     const diff = await proposePatchWithAzure(prompt);
 
