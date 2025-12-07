@@ -13,12 +13,12 @@ TEST_COMMAND = [
     "--browsers=ChromeHeadless"
 ]
 
-AZURE_DEPLOYMENT = os.getenv("AZURE_DEPLOYMENT_NAME")
+AZURE_DEPLOYMENT = "gpt-5-chat"
 
 client = AzureOpenAI(
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-    api_version="2024-02-15-preview", # Check your specific Azure version
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+    api_key="1d20e8zxvajgiuGSCyQ2XTU9ZfT7tvMKjRMLrS03JHbhuTpSsE8OJQQJ99BLACHYHv6XJ3w3AAAAACOGLhE2",
+    api_version="2025-01-01-preview", # Check your specific Azure version
+    azure_endpoint="https://sunee-miu300cs-eastus2.cognitiveservices.azure.com"
 )
 
 def strip_ansi(text):
