@@ -27,8 +27,7 @@ def run_tests():
         result = subprocess.run(
             TEST_COMMAND, 
             capture_output=True, 
-            text=True, 
-            shell=True  # Important for Windows to find npm
+            text=True
         )
         
         full_output = strip_ansi(result.stdout + result.stderr)
