@@ -30,7 +30,7 @@ def run_tests():
 
 def find_failing_file(log_output):
     """
-    Parses Angular/Karma logs to find the culprit file.
+    Parses Angular/vitest logs to find the culprit file.
     Matches lines like: 'src/app/xxx.component.ts' or 'src/app/xxx.ts'
     """
     # Pattern looks for src/... ending in .ts
