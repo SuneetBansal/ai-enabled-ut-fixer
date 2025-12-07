@@ -7,15 +7,18 @@ from openai import AzureOpenAI
 # --- CONFIGURATION ---
 # Command to run Angular tests in CI mode (Headless)
 TEST_COMMAND = [
-    "npm", "run", "test"
+    "npm", "run", "test", "--",
+    "--no-watch",
+    "--no-progress",
+    "--browsers=ChromeHeadless"
 ]
 
-AZURE_DEPLOYMENT = "gpt-5-chat"
+AZURE_DEPLOYMENT = os.getenv("AZURE_DEPLOYMENT_NAME")
 
 client = AzureOpenAI(
-    api_key="1d20e8zxvajgiuGSCyQ2XTU9ZfT7tvMKjRMLrS03JHbhuTpSsE8OJQQJ99BLACHYHv6XJ3w3AAAAACOGLhE2",
-    api_version="2025-01-01-preview", # Check your specific Azure version
-    azure_endpoint="https://sunee-miu300cs-eastus2.cognitiveservices.azure.com"
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+    api_version="2024-02-15-preview", # Check your specific Azure version
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
 )
 
 def strip_ansi(text):
@@ -31,16 +34,19 @@ def run_tests():
 def find_failing_file(log_output):
     """
     Parses Angular/Karma logs to find the culprit file.
-    Matches lines like: 'src/app/utils/calc.component.ts'
+    Matches lines like: 'src/app/xxx.component.ts' or 'src/app/xxx.ts'
     """
     # Pattern looks for src/... ending in .ts
     # We prioritize .ts files over .spec.ts because we usually want to fix the logic, not the test.
    
     # 1. Try to find the specific component/service file
+    print('-------------------------')
+    print(log_output)
     match_ts = re.search(r'(src/[a-zA-Z0-9_\-/]+\.ts)', log_output)
    
     if match_ts:
         file_found = match_ts.group(1)
+        print('FINE FOUND ---------------------')
        
         # If the error points to the spec file, try to infer the component file
         # (Assuming the test is correct and the code is wrong)
