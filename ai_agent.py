@@ -40,6 +40,9 @@ def find_failing_file(log_output):
     print('-------------------------')
     print(log_output)
     match_ts = re.search(r'(src/[a-zA-Z0-9_\-/]+\.ts)', log_output)
+    print('-----------  match_ts -------------------')
+    print(match_ts)
+    print('----------------- match_ts -----------------')
    
     if match_ts:
         file_found = match_ts.group(1)
