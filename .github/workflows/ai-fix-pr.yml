@@ -1,0 +1,86 @@
+name: AI UT Fixer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  ai-fix-tests:
+    # Prevent infinite loops: Don't run if the branch is already an auto-fix branch
+    if: "!startsWith(github.head_ref, 'ai-fix/')"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head_ref }}
+          fetch-depth: 0
+
+      # --- Setup Environment ---
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+     
+      - name: Install NPM Deps
+        run: npm ci
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Python OpenAI
+        run: pip install openai
+
+      # --- Run Agent ---
+      - name: Run AI Agent
+        id: run_ai
+        # We use continue-on-error: true because if the AI fails to fix it,
+        # we don't want to crash the workflow immediately (we handle it in next step)
+        continue-on-error: true
+        run: python ai_agent.py
+
+      # --- PR Creation Logic ---
+      - name: Check for Fix Success
+        id: check_status
+        run: |
+          if [ -f "AI_FIX_SUCCESS" ]; then
+            echo "fixed=true" >> $GITHUB_OUTPUT
+            rm AI_FIX_SUCCESS
+          else
+            echo "fixed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Fix Pull Request
+        if: steps.check_status.outputs.fixed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_BRANCH: ${{ github.head_ref }}
+        run: |
+          # 1. Config Git
+          git config --global user.name "azure-ai-bot"
+          git config --global user.email "ai-bot@github.actions"
+
+          # 2. Create a unique branch name based on the source branch
+          FIX_BRANCH="ai-fix/${SOURCE_BRANCH}-$(date +%s)"
+         
+          # 3. Checkout new branch and commit
+          git checkout -b $FIX_BRANCH
+          git add .
+          git commit -m "fix(test): AI auto-repair for failing tests"
+          git push origin $FIX_BRANCH
+
+          # 4. Create PR targeting the SOURCE BRANCH of the original PR
+          # This creates a "Nested PR" (Fix -> Feature Branch)
+          gh pr create \
+            --title "🤖 AI Fix for $SOURCE_BRANCH" \
+            --body "Tests were failing on your branch. This PR applies an AI-generated fix verified by unit tests." \
+            --base "$SOURCE_BRANCH" \
+            --head "$FIX_BRANCH"
