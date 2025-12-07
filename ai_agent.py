@@ -7,7 +7,7 @@ from openai import AzureOpenAI
 # --- CONFIGURATION ---
 # Command to run Angular tests in CI mode (Headless)
 TEST_COMMAND = [
-    "npm", "run", "test"
+    "npm", "run", "test", "--", "--watch=false"
 ]
 
 AZURE_DEPLOYMENT = "gpt-5-chat"
@@ -23,24 +23,46 @@ def strip_ansi(text):
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 def run_tests():
-    print("Running Angular unit tests...")
-    result = subprocess.run(TEST_COMMAND, capture_output=True, text=True)
-    full_output = strip_ansi(result.stdout + result.stderr)
-    return result.returncode == 0, full_output
+    try:
+        result = subprocess.run(
+            TEST_COMMAND, 
+            capture_output=True, 
+            text=True
+        )
+        
+        full_output = strip_ansi(result.stdout + result.stderr)
+        
+        # Debug print to ensure we are actually capturing data
+        print(f"Test Execution Finished. Return Code: {result.returncode}")
+        if len(full_output) < 10:
+            print("WARNING: Output seems empty. Check if 'npm' is in your path or if the command is correct.")
+        
+        return result.returncode == 0, full_output
+
+    except Exception as e:
+        print(f"Error executing subprocess: {e}")
+        return False, str(e)
 
 def find_failing_file(log_output):
     """
-    Parses Angular/Karma logs to find the culprit file.
-    Matches lines like: 'src/app/utils/calc.component.ts'
+    Parses Angular/vitest logs to find the culprit file.
+    Matches lines like: 'src/app/xxx.component.ts' or 'src/app/xxx.ts'
     """
     # Pattern looks for src/... ending in .ts
     # We prioritize .ts files over .spec.ts because we usually want to fix the logic, not the test.
    
     # 1. Try to find the specific component/service file
-    match_ts = re.search(r'(src/[a-zA-Z0-9_\-/]+\.ts)', log_output)
+    print('-------------------------')
+    print(f"****************************  {log_output}")
+    regex_pattern = r'(src[\\/][\w\-\./\\]+\.ts)'
+    match_ts = re.search(regex_pattern, log_output)
+    print('-----------  match_ts -------------------')
+    print(match_ts)
+    print('----------------- match_ts -----------------')
    
     if match_ts:
         file_found = match_ts.group(1)
+        print('FINE FOUND ---------------------')
        
         # If the error points to the spec file, try to infer the component file
         # (Assuming the test is correct and the code is wrong)
