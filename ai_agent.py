@@ -7,10 +7,7 @@ from openai import AzureOpenAI
 # --- CONFIGURATION ---
 # Command to run Angular tests in CI mode (Headless)
 TEST_COMMAND = [
-    "npm", "run", "test", "--",
-    "--no-watch",
-    "--no-progress",
-    "--browsers=ChromeHeadless"
+    "npm", "run", "test"
 ]
 
 AZURE_DEPLOYMENT = "gpt-5-chat"
