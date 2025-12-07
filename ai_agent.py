@@ -23,10 +23,26 @@ def strip_ansi(text):
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 def run_tests():
-    print("Running Angular unit tests...")
-    result = subprocess.run(TEST_COMMAND, capture_output=True, text=True)
-    full_output = strip_ansi(result.stdout + result.stderr)
-    return result.returncode == 0, full_output
+    try:
+        result = subprocess.run(
+            TEST_COMMAND, 
+            capture_output=True, 
+            text=True, 
+            shell=True  # Important for Windows to find npm
+        )
+        
+        full_output = strip_ansi(result.stdout + result.stderr)
+        
+        # Debug print to ensure we are actually capturing data
+        print(f"Test Execution Finished. Return Code: {result.returncode}")
+        if len(full_output) < 10:
+            print("WARNING: Output seems empty. Check if 'npm' is in your path or if the command is correct.")
+        
+        return result.returncode == 0, full_output
+
+    except Exception as e:
+        print(f"Error executing subprocess: {e}")
+        return False, str(e)
 
 def find_failing_file(log_output):
     """
