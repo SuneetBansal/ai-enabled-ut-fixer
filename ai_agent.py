@@ -38,7 +38,7 @@ def find_failing_file(log_output):
    
     # 1. Try to find the specific component/service file
     print('-------------------------')
-    print(log_output)
+    print(f"****************************  {log_output}")
     match_ts = re.search(r'(src/[a-zA-Z0-9_\-/]+\.ts)', log_output)
     print('-----------  match_ts -------------------')
     print(match_ts)
