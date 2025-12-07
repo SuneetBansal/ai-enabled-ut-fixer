@@ -58,29 +58,47 @@ jobs:
             echo "fixed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create Fix Pull Request
+      - name: Create PR with fixes
         if: steps.check_status.outputs.fixed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_BRANCH: ${{ github.head_ref }}
-        run: |
-          # 1. Config Git
-          git config --global user.name "azure-ai-bot"
-          git config --global user.email "ai-bot@github.actions"
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          commit-message: "Auto-fix: Address failing Angular unit tests for PR #${{ github.event.number }}"
+          title: "Auto-fix: Angular unit test failures for PR #${{ github.event.number }}"
+          body: |
+            This automated PR attempts to fix failing unit tests detected in PR #${{ github.event.number }}.
+            - Base: **${{ github.event.pull_request.base.ref }}**
+            - Source: **autofix/pr-${{ github.event.number }}**
+            - Runner: **${{ needs.run-tests.outputs.runner }}**
+            - Agent: Azure OpenAI (optional)
+            Review diffs and logs; merge this fix first, then re-run the original PR.
+          branch: "autofix/pr-${{ github.event.number }}"
+          base: "${{ github.event.pull_request.base.ref }}"
+          labels: "autofix,bot"
 
-          # 2. Create a unique branch name based on the source branch
-          FIX_BRANCH="ai-fix/${SOURCE_BRANCH}-$(date +%s)"
+      # - name: Create Fix Pull Request
+      #   if: steps.check_status.outputs.fixed == 'true'
+      #   env:
+      #     GH_TOKEN: ${{ github.token }}
+      #     SOURCE_BRANCH: ${{ github.head_ref }}
+      #   run: |
+      #     # 1. Config Git
+      #     git config --global user.name "azure-ai-bot"
+      #     git config --global user.email "ai-bot@github.actions"
+
+      #     # 2. Create a unique branch name based on the source branch
+      #     FIX_BRANCH="ai-fix/${SOURCE_BRANCH}-$(date +%s)"
          
-          # 3. Checkout new branch and commit
-          git checkout -b $FIX_BRANCH
-          git add .
-          git commit -m "fix(test): AI auto-repair for failing tests"
-          git push origin $FIX_BRANCH
+      #     # 3. Checkout new branch and commit
+      #     git checkout -b $FIX_BRANCH
+      #     git add .
+      #     git commit -m "fix(test): AI auto-repair for failing tests"
+      #     git push origin $FIX_BRANCH
 
-          # 4. Create PR targeting the SOURCE BRANCH of the original PR
-          # This creates a "Nested PR" (Fix -> Feature Branch)
-          gh pr create \
-            --title "🤖 AI Fix for $SOURCE_BRANCH" \
-            --body "Tests were failing on your branch. This PR applies an AI-generated fix verified by unit tests." \
-            --base "$SOURCE_BRANCH" \
-            --head "$FIX_BRANCH"
+      #     # 4. Create PR targeting the SOURCE BRANCH of the original PR
+      #     # This creates a "Nested PR" (Fix -> Feature Branch)
+      #     gh pr create \
+      #       --title "🤖 AI Fix for $SOURCE_BRANCH" \
+      #       --body "Tests were failing on your branch. This PR applies an AI-generated fix verified by unit tests." \
+      #       --base "$SOURCE_BRANCH" \
+      #       --head "$FIX_BRANCH"
