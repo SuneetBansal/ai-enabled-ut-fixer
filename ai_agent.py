@@ -47,6 +47,7 @@ def find_failing_file(log_output):
     """
     Parses Angular/vitest logs to find the culprit file.
     Matches lines like: 'src/app/xxx.component.ts' or 'src/app/xxx.ts'
+    Try to first update .spec.ts file if UT fail can be fixed else go inside code and update code 
     """
     # Pattern looks for src/... ending in .ts
     # We prioritize .ts files over .spec.ts because we usually want to fix the logic, not the test.
