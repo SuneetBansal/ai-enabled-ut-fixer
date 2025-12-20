@@ -17,5 +17,9 @@ describe('HelloComponent Test', () => {
     it('should be defined', () => {
         expect(instance).toBeDefined();
     });
+
+    it('should show correct message', () => {
+        expect(instance.message()).toEqual('This is child component');
+    });
     
 });
