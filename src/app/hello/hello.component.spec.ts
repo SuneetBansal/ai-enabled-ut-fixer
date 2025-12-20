@@ -19,7 +19,7 @@ describe('HelloComponent Test', () => {
     });
 
     it('should show correct message', () => {
-        expect(instance.message()).toEqual('This is child component');
+        expect(instance.message()).toEqual('This is child component1');
     });
     
 });
