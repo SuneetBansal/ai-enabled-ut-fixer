@@ -53,8 +53,9 @@ jobs:
 
       - name: Execute Selective Lint
         run: |
+          set -e
           echo "Running: ${{ needs.ai-analysis.outputs.lint_command }}"
-          ${{ needs.ai-analysis.outputs.lint_command }}
+          bash -c ${{ needs.ai-analysis.outputs.lint_command }}
 
   # ====================================================
   # JOB 3: UNIT TESTS (Selective)
