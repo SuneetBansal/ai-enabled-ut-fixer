@@ -1,0 +1,117 @@
+name: AI Selective CI/CD
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ====================================================
+  # JOB 1: AI AGENT (Decision Maker)
+  # ====================================================
+  ai-analysis:
+    runs-on: ubuntu-latest
+    outputs:
+      run_snyk: ${{ steps.decide.outputs.run_snyk }}
+      run_sonar: ${{ steps.decide.outputs.run_sonar }}
+      sonar_inclusions: ${{ steps.decide.outputs.sonar_inclusions }}
+      test_command: ${{ steps.decide.outputs.test_command }}
+      lint_command: ${{ steps.decide.outputs.lint_command }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for diff
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install OpenAI
+        run: pip install openai
+
+      - name: Run AI Agent
+        id: decide
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python ci_agent.py
+
+  # ====================================================
+  # JOB 2: LINT (Selective)
+  # ====================================================
+  lint:
+    needs: ai-analysis
+    # Skip if command is just an echo
+    if: "!contains(needs.ai-analysis.outputs.lint_command, 'No files to lint')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm ci
+
+      - name: Execute Selective Lint
+        run: |
+          echo "Running: ${{ needs.ai-analysis.outputs.lint_command }}"
+          ${{ needs.ai-analysis.outputs.lint_command }}
+
+  # ====================================================
+  # JOB 3: UNIT TESTS (Selective)
+  # ====================================================
+  unit-tests:
+    needs: ai-analysis
+    if: "!contains(needs.ai-analysis.outputs.test_command, 'No tests required')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm ci
+
+      - name: Execute AI Selected Tests
+        run: |
+          echo "Running: ${{ needs.ai-analysis.outputs.test_command }}"
+          ${{ needs.ai-analysis.outputs.test_command }}
+
+  # ====================================================
+  # JOB 4: SNYK SECURITY (Conditional)
+  # ====================================================
+  # snyk-scan:
+  #   needs: ai-analysis
+  #   if: needs.ai-analysis.outputs.run_snyk == 'true'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: npm ci
+
+  #     - name: Run Snyk
+  #       uses: snyk/actions/node@master
+  #       env:
+  #         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  #       with:
+  #         args: --severity-threshold=high
+
+  # ====================================================
+  # JOB 5: SONARQUBE (Targeted)
+  # ====================================================
+  # sonar-scan:
+  #   needs: ai-analysis
+  #   if: needs.ai-analysis.outputs.run_sonar == 'true'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: SonarQube Scan
+  #       uses: sonarsource/sonarqube-scan-action@master
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  #       with:
+  #         # Injects the specific file list
+  #         args: >
+  #           -Dsonar.inclusions=${{ needs.ai-analysis.outputs.sonar_inclusions }}
+  #           -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
