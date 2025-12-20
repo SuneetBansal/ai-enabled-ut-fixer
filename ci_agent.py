@@ -146,7 +146,7 @@ def write_github_output(decisions):
             valid_tests = validate_paths(tests)
             if valid_tests:
                 print(f"Tests Selected: {len(valid_tests)}")
-                fh.write(f"test_command=npm test -- {' '.join(valid_tests)}\n")
+                fh.write(f"test_command=npm test --include {' '.join(valid_tests)}\n")
             else:
                 fh.write("test_command=echo 'No tests required'\n")
 
